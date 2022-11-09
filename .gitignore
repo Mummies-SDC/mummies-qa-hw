@@ -1,0 +1,7 @@
+answers.csv
+answers_photos.csv
+questions.csv
+.env
+package-lock.json
+node_modules
+K6Tests
