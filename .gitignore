@@ -4,4 +4,3 @@ questions.csv
 .env
 package-lock.json
 node_modules
-K6Tests

@@ -1,20 +1,22 @@
 require('dotenv').config();
-const client = require('../DB/index.js');
-const dbconnection = require('../DB/index.js');
+const client = require('../db/index.js');
+const dbconnection = require('../db/index.js');
 const models = require('../db/Model.js');
 
 module.exports = {
   getQuestions: async function getQuestions(req, res) {
     const { productID } = req.params;
-    const {count, page} = req.query;
-    const offset = page * count - count;
+    let {count, page} = req.query;
+    count = count || 5;
+    page = page || 1;
+    let offset = page * count - count
     // console.log('count: ', count, 'page: ', offset, 'productID: ', productID);
 
     let responseObj = [];
 
     await models.getQuestions(productID, count, offset.toString())
       .then((results) => {
-        responseObj = results;
+        responseObj = results.rows;
       })
       .catch((err) => {
         res.status(501);
@@ -30,12 +32,11 @@ module.exports = {
       .then(() => {
         return Promise.all(responseObj.map(async (question) => {
           let results = await models.getAnswers(question.question_id)
-          if (results.length === 0) {
+          if (results.rows.length === 0) {
             question.answers = {};
           } else {
             let answers = {};
-            results.forEach((element) => {
-              // console.log('element should have photos: ', element);
+            results.rows.forEach((element) => {
               let shapeup = {
                 id: element.id,
                 body: element.body,
@@ -65,6 +66,10 @@ module.exports = {
 
   helpfulQuestion: async function(req, res) {
     const {questionID} = req.params;
+    if (!questionID) {
+      console.log('Question ID required');
+      res.status(400).send('No Question ID');
+    }
     await models.helpfulQuestion(questionID)
     .then((result) => {
       console.log(result);
@@ -103,6 +108,9 @@ module.exports = {
 
   reportAnswer: async function(req, res) {
     const {answerID} = req.params;
+    if (!answerID) {
+      res.status(400).send('No answer ID attached');
+    }
     console.log('answerID', answerID);
     await models.reportAnswer(answerID)
       .then(() => {
@@ -115,141 +123,35 @@ module.exports = {
   },
 
   ask: async function(req, res) {
+    if (Object.keys(req.body).length === 0) {
+      res.status(400).send('No body attached');
+    }
     // console.log('req body upon receipt: ', req.body);
     await models.ask(req.body)
       .then((results) => {
         res.send('Succesfully posted question into DB');
       })
       .catch((err) => {
-        console.log(err);
+        console.log(err, 'request body: ', req.body);
         res.status(500).send('Failed to post answer');
       });
   },
 
   answer: async function(req, res) {
+    // if (Object.keys(req.body).length === 0) {
+    //   res.status(400).send('No answer attached to request');
+    // }
     const answerBody = req.body;
     const { questionID } = req.params;
-    await models.answer(answerBody, questionID)
+
+    models.answer(answerBody, questionID)
       .then((results) => {
-        // console.log(results);
+        console.log('results upon exiting model: ', results);
         res.send('Successfully uploaded answer');
       })
       .catch((err) => {
         console.log(err);
         res.status(500).send('Something went wrong :(');
       });
-  }
-  // },
-
-  // getAnswers(req, res) {
-  //   const { questionID } = req.params;
-
-  //   const answerURL = `https://app-hrsei-api.herokuapp.com/api/fec2/hr-rfp/qa/questions/${questionID}/answers`;
-
-  //   axios.get(answerURL, config)
-  //     .then((results) => {
-  //       console.log('init answer query successful', results.data);
-  //       res.send(results.data);
-  //     })
-  //     .catch((err) => {
-  //       console.log('error getting answers from server', err);
-  //       res.status(500).send('Could not get results from server');
-  //     });
-  // },
-
-  // ask(req, res) {
-  //   const questionDetails = req.body;
-  //   console.log(req.body);
-
-  //   const askURL = 'https://app-hrsei-api.herokuapp.com/api/fec2/hr-rfp/qa/questions';
-
-  //   axios.post(askURL, questionDetails, config)
-  //     .then(() => {
-  //       res.send('GREAT SUCCESS');
-  //     })
-  //     .catch((err) => {
-  //       console.log('Something went wrong with pOsTiNg', err);
-  //       res.status(400);
-  //       res.send('Could not upload your question to the database');
-  //     });
-  // },
-
-  // answer(req, res) {
-  //   const answerDetails = req.body;
-  //   const { questionID } = req.params;
-  //   console.log('answer details: ', answerDetails);
-  //   console.log('questionID: ', questionID);
-
-  //   const answerURL = `https://app-hrsei-api.herokuapp.com/api/fec2/hr-rfp/qa/questions/${questionID}/answers`;
-
-  //   axios.post(answerURL, answerDetails, config)
-  //     .then(() => {
-  //       res.send('GREAT SUCCESS ANSWERING');
-  //     })
-  //     .catch((err) => {
-  //       console.log(err.data, 'Could not create answer in DB 😔');
-  //       res.body(err.data);
-  //       res.status(400).send('Could not submit answer: ');
-  //     });
-  // },
-
-  // helpfulQuestion(req, res) {
-  //   const { questionID } = req.params;
-  //   const helpfulURL = `https://app-hrsei-api.herokuapp.com/api/fec2/hr-rfp/qa/questions/${questionID}/helpful`;
-
-  //   axios.put(helpfulURL, null, config)
-  //     .then(() => {
-  //       console.log('GREAT SUCCESS');
-  //       res.send(`Successfully incremented helpful rating of ${questionID}`);
-  //     })
-  //     .catch((err) => {
-  //       console.log(err, 'Something went wrong with updating helpfulness');
-  //       res.send('There is an issue with incrementing helpfulness');
-  //     });
-  // },
-
-  // reportQuestion(req, res) {
-  //   const { questionID } = req.params;
-  //   const reportQuestionURL = `https://app-hrsei-api.herokuapp.com/api/fec2/hr-rfp/qa/questions/${questionID}/report`;
-
-  //   axios.put(reportQuestionURL, null, config)
-  //     .then(() => {
-  //       console.log('GREAT SUCCESS REPORTING');
-  //       res.send(`Successfully Reported Question ${questionID}!`);
-  //     })
-  //     .catch((err) => {
-  //       console.log(err, 'Could not successfully report question');
-  //       res.send('There was an issue with reporting this question');
-  //     });
-  // },
-
-  // helpfulAnswer(req, res) {
-  //   const { answerID } = req.params;
-  //   const helpfulAnswerURL = `https://app-hrsei-api.herokuapp.com/api/fec2/hr-rfp/qa/answers/${answerID}/helpful`;
-
-  //   axios.put(helpfulAnswerURL, null, config)
-  //     .then(() => {
-  //       console.log('VERY HELPFUL ANSWER!');
-  //       res.send('Successfully declared helpfulness');
-  //     })
-  //     .catch((err) => {
-  //       console.log(err, `Something went wrong with updating helpfulness of answer ${answerID}`);
-  //       res.send(`Could not increment helpfulness rating of ${answerID}`);
-  //     });
-  // },
-
-  // reportAnswer(req, res) {
-  //   const { answerID } = req.params;
-  //   const reportAnswerURL = `https://app-hrsei-api.herokuapp.com/api/fec2/hr-rfp/qa/answers/${answerID}/report`;
-
-  //   axios.put(reportAnswerURL, null, config)
-  //     .then(() => {
-  //       console.log('GREAT SUCCESS - ANSWER REPORTED');
-  //       res.send(`Successfully Reported Answer ${answerID}`);
-  //     })
-  //     .catch((err) => {
-  //       console.log(err, 'Something went wrong with reporting');
-  //       res.send(`Could not successfully report ${answerID}`);
-  //     });
-  // },
+  },
 };
