@@ -10,59 +10,15 @@ module.exports = {
     count = count || 5;
     page = page || 1;
     let offset = page * count - count
-    // console.log('count: ', count, 'page: ', offset, 'productID: ', productID);
-
-    let responseObj = [];
-
-    await models.getQuestions(productID, count, offset.toString())
-      .then((results) => {
-        responseObj = results.rows;
-      })
-      .catch((err) => {
-        res.status(501);
-        console.log(err);
-        res.send(':(');
-      })
-      .then(() => {
-        // console.log('total object: ', responseObj);
-        responseObj.map((each) => {
-        each.question_date = new Date(each.question_date * 1);
-        })
-      })
-      .then(() => {
-        return Promise.all(responseObj.map(async (question) => {
-          let results = await models.getAnswers(question.question_id)
-          if (results.rows.length === 0) {
-            question.answers = {};
-          } else {
-            let answers = {};
-            results.rows.forEach((element) => {
-              let shapeup = {
-                id: element.id,
-                body: element.body,
-                name: element.name,
-                date: new Date(element.date * 1),
-                helpfulness: element.helpful,
-                photos: element.photos
-              };
-              answers[element.id] = shapeup;
-            })
-            question.answers = answers;
-          }
-        }))
-      })
-      .then(() => {
-        // console.log('final output: ', responseObj);
-        res.send({
-          'product_id': productID,
-          'results': responseObj
-        });
-      })
-      .catch((err) => {
-        console.log('HERE IS THE ERROR: ',err);
-        res.status(500).send('could not get something from DB');
-      })
-    },
+    models.getQuestions(productID, count, offset)
+    .then((results) => {
+      res.send(results);
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).send('Could not get questions from DB');
+    })
+  },
 
   helpfulQuestion: async function(req, res) {
     const {questionID} = req.params;
@@ -94,9 +50,9 @@ module.exports = {
     });
   },
 
-  helpfulAnswer: async function(req, res) {
+  helpfulAnswer: function(req, res) {
     const {answerID} = req.params;
-    await models.helpfulAnswer(answerID)
+    models.helpfulAnswer(answerID)
       .then(() => {
         res.send('Succesfully incremented helpfulness');
       })
