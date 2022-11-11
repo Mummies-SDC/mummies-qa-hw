@@ -2,7 +2,7 @@ const dbconnection = require('../db/index.js');
 
 module.exports = {
   getQuestions: async function getQuestions(ID, count, offset) {
-  return dbconnection.query(`
+  const questionsQuery = dbconnection.query(`
     SELECT q.question_id, q.question_body, q.question_date, q.asker_name, q.question_helpfulness,
       (JSON_BUILD_OBJECT(a.id, JSON_BUILD_OBJECT(
         'id', a.id, 'body', a.body, 'date', to_timestamp(a.date), 'name', a.name, 'helpfulness', a.helpful, 'photos',
@@ -23,6 +23,7 @@ module.exports = {
     .then((results) => {
       return results.rows;
     })
+    return questionsQuery;
   },
 
   getAnswers: async function getAnswers(ID) {

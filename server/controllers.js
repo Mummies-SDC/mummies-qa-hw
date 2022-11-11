@@ -1,7 +1,7 @@
 require('dotenv').config();
 const client = require('../db/index.js');
 const dbconnection = require('../db/index.js');
-const models = require('../db/Model.js');
+const models = require('../db/model.js');
 
 module.exports = {
   getQuestions: function getQuestions(req, res) {
