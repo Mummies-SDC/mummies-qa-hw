@@ -1,5 +1,4 @@
 require('dotenv').config();
-const client = require('postgres');
 const { Pool } = require('pg');
 
 const config = {
