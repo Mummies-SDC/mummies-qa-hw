@@ -2,9 +2,7 @@ const dbconnection = require('../db/index.js');
 
 module.exports = {
   getQuestions: async function getQuestions(ID, count, offset) {
-    console.log('inside model: ', ID, count, offset);
-
-  const questions = dbconnection.query(`
+  return dbconnection.query(`
     SELECT q.question_id, q.question_body, q.question_date, q.asker_name, q.question_helpfulness,
       (JSON_BUILD_OBJECT(a.id, JSON_BUILD_OBJECT(
         'id', a.id, 'body', a.body, 'date', to_timestamp(a.date), 'name', a.name, 'helpfulness', a.helpful, 'photos',
@@ -16,21 +14,19 @@ module.exports = {
     ON q.question_id = a.question_id
     LEFT JOIN photos p
     ON a.id = p.answer_id
-    WHERE product_id=999999 AND q.reported=false
+    WHERE product_id='${ID}' AND q.reported=false
     GROUP BY q.question_id, a.id
     ORDER BY question_helpfulness DESC
-    LIMIT 10
-    OFFSET 0
+    LIMIT '${count}'
+    OFFSET '${offset}'
     `)
     .then((results) => {
       return results.rows;
     })
-  return questions;
-
   },
 
   getAnswers: async function getAnswers(ID) {
-    const answers = await dbconnection.query(`
+    return dbconnection.query(`
     SELECT a.id, a.body, a.date, a.name, a.helpful,
     json_agg(photos.url) AS photos
     FROM answers AS a
@@ -40,7 +36,12 @@ module.exports = {
     GROUP BY a.id, a.body, a.date, a.name, a.helpful
     ORDER BY helpful desc
     `)
-    return answers;
+    .then((results) => {
+      return results.rows;
+    })
+    .catch((err) => {
+      return err;
+    })
   },
 
   /*

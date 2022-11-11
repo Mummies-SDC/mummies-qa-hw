@@ -4,7 +4,7 @@ const dbconnection = require('../db/index.js');
 const models = require('../db/Model.js');
 
 module.exports = {
-  getQuestions: async function getQuestions(req, res) {
+  getQuestions: function getQuestions(req, res) {
     const { productID } = req.params;
     let {count, page} = req.query;
     count = count || 5;
